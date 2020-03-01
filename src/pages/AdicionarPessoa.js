@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 
 import moment from 'moment'
 import { toast } from 'react-toastify';
-import * as yup from 'yup';
 
-import "./style.css"
+import PessoaSchema from "../validator/SchemaValidator"
+import "../styles/style.css"
 import api from '../services/api'
 
 export default function AdicionarPessoa({ match, history }) {
@@ -18,16 +18,6 @@ export default function AdicionarPessoa({ match, history }) {
   const [naturalidade, setNaturalidade] = useState("")
   const [nacionalidade, setNacionalidade] = useState("")
   const [sexo, setSexo] = useState("")
-  const [erros, setErros] = useState([])
-
-  useEffect(() => {
-    console.log("entrou")
-    erros.map(e => {
-      toast.error(e)
-    })
-    
-
-  },[erros])
 
   function preencherObjeto(pessoa) {
     setNome(pessoa.nome);
@@ -40,36 +30,11 @@ export default function AdicionarPessoa({ match, history }) {
     setSexo(pessoa.sexo);
   }
 
-  const regexCPF = /([0-9]{2}[\.]?[0-9]{3}[\.]?[0-9]{3}[\/]?[0-9]{4}[-]?[0-9]{2})|([0-9]{3}[\.]?[0-9]{3}[\.]?[0-9]{3}[-]?[0-9]{2})/gm;
-  const date_regex = /^([0-2][0-9]|(3)[0-1])(\/)(((0)[0-9])|((1)[0-2]))(\/)\d{4}$/;
-
-  function cpfValidate(cpf) {
-    return cpf.length > 10
-  }
-
-  yup.addMethod(yup.string, "cpf", function (message) {
-    return yup.mixed().test("cpf", message || "número de CPF inválido", value => cpfValidate(value));
-  });
-
-
-  let schema = yup.object().shape({
-    nome: yup.string().required("O campo Nome é obrigatório."),
-    email: yup.string().email("E-mail precisa estar no formato correto"),
-    cpf: yup.string()
-      .transform(function removeNonNumericalChar(value) {
-        return this.isType(value) && value !== null ? value.replace(/\D/g, "") : value;
-      })
-      .matches(regexCPF, "formato inválido do CPF")
-      .cpf("Informe um CPF válido."),
-    dataNascimento: yup.string()
-      .matches(date_regex, "formato inválido da Data")
-  })
-
   useEffect(() => {
 
     async function load() {
 
-      if (match.params.id != 0) {
+      if (match.params.id !== 0) {
         const response = await api.get(`/pessoa/${match.params.id}`)
         response.data.dataNascimento = moment(response.data.dataNascimento).format('DD/MM/YYYY');
         preencherObjeto(response.data)
@@ -94,12 +59,11 @@ export default function AdicionarPessoa({ match, history }) {
 
   async function atualizarPessoa() {
 
-    await schema
+    await PessoaSchema
       .validate({ nome, cpf, email, dataNascimento }, { abortEarly: false })
       .then(async function (e) {
-        setErros([])
 
-        if (id != 0) {
+        /*if (id !== 0) {
           console.log(id, nome, cpf, dataNascimento, email, naturalidade, nacionalidade)
           const response = await api.put(`/pessoa/${id}`,
             {
@@ -130,16 +94,16 @@ export default function AdicionarPessoa({ match, history }) {
           preencherObjeto(response.data)
           toast.success("Pessoa Adicionada com sucesso!")
           history.push(`/add/${response.data.id}`)
-
-        }
+        }*/
 
       })
       .catch(errors => {
-        if (errors.errors != undefined) {
-          setErros(errors.errors)
+        if (errors.errors !== undefined) {
+          errors.errors.forEach(e => {
+            toast.error(e)
+          })
         } else {
-          console.log(errors)
-          toast.error("Ocorreu algum erro ao tentar cadastrar, verifique se o CPF já existe.")
+          toast.error(errors.response.data.message)
         }
       });
   }
@@ -148,7 +112,7 @@ export default function AdicionarPessoa({ match, history }) {
     <>
       <Link to="/">Voltar</Link>
       <hr />
-      <h1>{id != 0 ? "Atualizar" : "Cadastrar"} Pessoa</h1>
+      <h1>{id !== 0 ? "Atualizar" : "Cadastrar"} Pessoa</h1>
       <form>
         <div className="form-row">
           <div className="form-group col-md-6">
@@ -157,7 +121,7 @@ export default function AdicionarPessoa({ match, history }) {
           </div>
           <div className="form-group col-md-6">
             <label htmlFor="cpf">CPF:* (sem pontos)</label>
-            <input disabled={id != 0} type="text" className="form-control" placeholder="CPF" value={cpf} onChange={(e) => setCpf(e.target.value)} />
+            <input disabled={id === 0} type="text" className="form-control" placeholder="CPF" value={cpf} onChange={(e) => setCpf(e.target.value)} />
           </div>
         </div>
         <div className="form-row">
@@ -191,8 +155,7 @@ export default function AdicionarPessoa({ match, history }) {
         </div>
       </form>
 
-      <button className="col-md-6 btncad"
-        onClick={atualizarPessoa}> {id != 0 ? "Atualizar" : "Cadastrar"}
+      <button className="col-md-6 btncad" onClick={atualizarPessoa}> {id !== 0 ? "Atualizar" : "Cadastrar"}
       </button>
       <button className="col-md-6 btnlimpar" onClick={handleLimpar}>Limpar</button>
 

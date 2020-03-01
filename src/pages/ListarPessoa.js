@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-
-import api from '../services/api'
+import { toast } from 'react-toastify';
 import { parseISO, format } from 'date-fns'
 
-import "./style.css"
-
-import { toast } from 'react-toastify';
+import "../styles/style.css"
+import api from '../services/api'
 
 export default function ListarPessoa({ history }) {
 
@@ -20,10 +18,7 @@ export default function ListarPessoa({ history }) {
       const lista = await response.data
 
       lista.map(p => {
-        const obj =
-        {
-          dataNascimentoFormatada: format(parseISO(p.dataNascimento), "dd/MM/yyyy")
-        };
+        const obj = { dataNascimentoFormatada: format(parseISO(p.dataNascimento), "dd/MM/yyyy") };
         return Object.assign(p, obj)
       });
 
@@ -36,18 +31,14 @@ export default function ListarPessoa({ history }) {
 
   async function deletar(id) {
 
-    try {
-
-      await api.delete(`/pessoa/${id}`)
-
-      let l = pessoas.filter(x => x.id !== id)
-      setPessoas(l)
-
-      toast.success("Pessoa deletada com sucesso!");
-
-    } catch (err) {
-      toast.error("Ocorreu um erro ao tentar deletar a pessoa.");
-    }
+    await api.delete(`/pessoa/${id}`)
+      .then(() => {
+        setPessoas(pessoas.filter(x => x.id !== id))
+        toast.success("Pessoa deletada com sucesso!")
+      })
+      .catch(error => {
+        toast.error("Ocorreu um erro ao tentar deletar a pessoa.");
+      })
 
   }
 
